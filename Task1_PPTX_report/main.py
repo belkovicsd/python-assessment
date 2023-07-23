@@ -2,6 +2,7 @@ import logging
 
 from pptx import Presentation
 import pandas
+from pptx.util import Inches
 
 CONTENT_KEY = 'content'
 FILE_NAME = 'example_output.pptx'
@@ -66,7 +67,14 @@ def generate_title_slide_report(data):
 
 
 def generate_text_slide_report(data):
-    print(data)
+    presentation, slide = create_presentation(5, data)
+
+    left = top = Inches(1.2)
+    width = height = Inches(5)
+    text_box = slide.shapes.add_textbox(left, top, width, height)
+    text_box.text_frame.text = pandas.Series(data)[CONTENT_KEY]
+
+    presentation.save(FILE_NAME)
 
 
 def generate_list_slide_report(data):
