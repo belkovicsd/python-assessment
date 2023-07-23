@@ -2,10 +2,12 @@ import logging
 import os
 from io import BytesIO
 
+import numpy
 from pptx import Presentation
 import pandas
 import PIL.Image as Image
 from pptx.util import Inches
+import matplotlib.pyplot
 import urllib3
 
 CONTENT_KEY = 'content'
@@ -133,7 +135,24 @@ def generate_picture_slide_report(data):
 
 
 def generate_plot_slide_report(data):
-    print(data)
+    presentation, slide = create_presentation(TITLE_ONLY_LAYOUT, data)
+
+    values = numpy.loadtxt(pandas.Series(data)[CONTENT_KEY], delimiter=';')
+    x = [row[0] for row in values]
+    y = [row[1] for row in values]
+    configuration = pandas.Series(data)['configuration']
+    matplotlib.pyplot.plot(x, y)
+    matplotlib.pyplot.xlabel(configuration['x-label'])
+    matplotlib.pyplot.ylabel(configuration['y-label'])
+
+    buffer = BytesIO()
+    matplotlib.pyplot.savefig(buffer, format='png')
+    buffer.seek(0)
+    matplotlib.pyplot.close()
+
+    slide.shapes.add_picture(buffer, Inches(1.38), Inches(1.18), Inches(6.4), Inches(4.8))
+
+    presentation.save(FILE_NAME)
 
 
 read_config()
