@@ -1,11 +1,20 @@
 import logging
+import os
+from io import BytesIO
 
 from pptx import Presentation
 import pandas
+import PIL.Image as Image
 from pptx.util import Inches
+import urllib3
 
 CONTENT_KEY = 'content'
 FILE_NAME = 'example_output.pptx'
+PICTURE_URL = 'https://i0.wp.com/mechguru.com/wp-content/uploads/2012/05/S_N-Diagram.jpeg?w=688&ssl=1'
+
+TABLE_OF_CONTENT_LAYOUT = 1
+TITLE_LAYOUT = 0
+TITLE_ONLY_LAYOUT = 5
 
 
 class UnknownTypeException(Exception):
@@ -67,7 +76,7 @@ def create_presentation(layout, data):
 
 
 def generate_title_slide_report(data):
-    presentation, slide = create_presentation(0, data)
+    presentation, slide = create_presentation(TITLE_LAYOUT, data)
 
     subtitle = slide.placeholders[1]
     subtitle.text = pandas.Series(data)[CONTENT_KEY]
@@ -76,7 +85,7 @@ def generate_title_slide_report(data):
 
 
 def generate_text_slide_report(data):
-    presentation, slide = create_presentation(5, data)
+    presentation, slide = create_presentation(TITLE_ONLY_LAYOUT, data)
 
     left = top = Inches(1.2)
     width = height = Inches(5)
@@ -87,7 +96,7 @@ def generate_text_slide_report(data):
 
 
 def generate_list_slide_report(data):
-    presentation, slide = create_presentation(1, data)
+    presentation, slide = create_presentation(TABLE_OF_CONTENT_LAYOUT, data)
 
     elements = pandas.Series(data)[CONTENT_KEY]
     create_paragraph_for_each_element(elements, slide)
@@ -95,9 +104,32 @@ def generate_list_slide_report(data):
     presentation.save(FILE_NAME)
 
 
-
 def generate_picture_slide_report(data):
-    print(data)
+    presentation, slide = create_presentation(TITLE_ONLY_LAYOUT, data)
+
+    http = urllib3.PoolManager()
+    response = http.request('GET', PICTURE_URL)
+
+    if response.status != 200:
+        logging.error(f"generate_picture_slide_report - Response status: '{response.status}'")
+
+    else:
+        try:
+            downloaded_image = Image.open(BytesIO(response.data))
+            downloaded_image.save('picture.png')
+            slide.shapes.add_picture(
+                pandas.Series(data)[CONTENT_KEY], Inches(1.42), Inches(1.21), Inches(7.185), Inches(4.54)
+            )
+
+        except Exception as e:
+            logging.error(f"generate_picture_slide_report - An error occurred while processing the image: {e}")
+
+        finally:
+            if 'downloaded_image' in locals():
+                downloaded_image.close()
+                os.remove('picture.png')
+
+    presentation.save(FILE_NAME)
 
 
 def generate_plot_slide_report(data):
