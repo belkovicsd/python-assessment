@@ -1,13 +1,12 @@
-import logging
-import os
 from io import BytesIO
-
-import numpy
 from pptx import Presentation
-import pandas
-import PIL.Image as Image
 from pptx.util import Inches
+import PIL.Image as Image
+import logging
 import matplotlib.pyplot
+import numpy
+import os
+import pandas
 import urllib3
 
 CONTENT_KEY = 'content'
@@ -56,6 +55,7 @@ def read_config():
 
 def clear_presentation():
     Presentation().save(FILE_NAME)
+    logging.debug('clear_presentation - Empty Presentation created')
 
 
 def create_paragraph_for_each_element(elements, slide):
@@ -124,12 +124,13 @@ def generate_picture_slide_report(data):
             )
 
         except Exception as e:
-            logging.error(f"generate_picture_slide_report - An error occurred while processing the image: {e}")
+            logging.error(f"generate_picture_slide_report - An error occurred while processing the image: '{e}'")
 
         finally:
             if 'downloaded_image' in locals():
                 downloaded_image.close()
                 os.remove('picture.png')
+                logging.debug('generate_picture_slide_report - The downloaded picture has been deleted!')
 
     presentation.save(FILE_NAME)
 
