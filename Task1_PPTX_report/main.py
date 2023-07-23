@@ -47,6 +47,15 @@ def clear_presentation():
     Presentation().save(FILE_NAME)
 
 
+def create_paragraph_for_each_element(elements, slide):
+    shape = slide.shapes.placeholders[1]
+    text_frame = shape.text_frame
+    for element in elements:
+        paragraph = text_frame.add_paragraph()
+        paragraph.text = element['text']
+        paragraph.level = element['level']
+
+
 def create_presentation(layout, data):
     presentation = Presentation(FILE_NAME)
     slide_layout = presentation.slide_layouts[layout]
@@ -78,7 +87,13 @@ def generate_text_slide_report(data):
 
 
 def generate_list_slide_report(data):
-    print(data)
+    presentation, slide = create_presentation(1, data)
+
+    elements = pandas.Series(data)[CONTENT_KEY]
+    create_paragraph_for_each_element(elements, slide)
+
+    presentation.save(FILE_NAME)
+
 
 
 def generate_picture_slide_report(data):
