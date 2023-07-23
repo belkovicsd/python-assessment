@@ -1,6 +1,10 @@
 import logging
 
+from pptx import Presentation
 import pandas
+
+CONTENT_KEY = 'content'
+FILE_NAME = 'example_output.pptx'
 
 
 class UnknownTypeException(Exception):
@@ -8,6 +12,7 @@ class UnknownTypeException(Exception):
 
 
 def read_config():
+    clear_presentation()
     file = pandas.read_json('sample.json')
 
     type_mapping = {
@@ -37,8 +42,27 @@ def read_config():
             logging.warning(f"read_config - {e} '{type_value}', Index: {index}")
 
 
+def clear_presentation():
+    Presentation().save(FILE_NAME)
+
+
+def create_presentation(layout, data):
+    presentation = Presentation(FILE_NAME)
+    slide_layout = presentation.slide_layouts[layout]
+    slide = presentation.slides.add_slide(slide_layout)
+    title = slide.shapes.title
+    title.text = pandas.Series(data)['title']
+
+    return presentation, slide
+
+
 def generate_title_slide_report(data):
-    print(data)
+    presentation, slide = create_presentation(0, data)
+
+    subtitle = slide.placeholders[1]
+    subtitle.text = pandas.Series(data)[CONTENT_KEY]
+
+    presentation.save(FILE_NAME)
 
 
 def generate_text_slide_report(data):
