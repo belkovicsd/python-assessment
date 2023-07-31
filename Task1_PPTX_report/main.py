@@ -22,24 +22,18 @@ class UnknownTypeException(Exception):
     pass
 
 
-def read_config():
+def generate_report():
     clear_presentation()
-    file = pandas.read_json('sample.json')
 
-    type_mapping = {
-        'title': generate_title_slide_report,
-        'text': generate_text_slide_report,
-        'list': generate_list_slide_report,
-        'picture': generate_picture_slide_report,
-        'plot': generate_plot_slide_report
-    }
+    conf_path = get_file_path('sample.json')
+    file = pandas.read_json(conf_path)
 
     for index, row in file.iterrows():
 
         first_element = row.iloc[0]
         type_value = first_element['type']
 
-        process_object = type_mapping.get(type_value)
+        process_object = get_type_mapping(type_value)
 
         try:
             if process_object is None:
@@ -51,6 +45,22 @@ def read_config():
 
         except UnknownTypeException as e:
             logging.warning(f"read_config - {e} '{type_value}', Index: {index}")
+
+
+def get_type_mapping(type_value):
+    type_mapping = {
+        'title': generate_title_slide_report,
+        'text': generate_text_slide_report,
+        'list': generate_list_slide_report,
+        'picture': generate_picture_slide_report,
+        'plot': generate_plot_slide_report
+    }
+    return type_mapping.get(type_value)
+
+
+def get_file_path(filename):
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    return os.path.join(dir_path, filename)
 
 
 def clear_presentation():
@@ -89,9 +99,7 @@ def generate_title_slide_report(data):
 def generate_text_slide_report(data):
     presentation, slide = create_presentation(TITLE_ONLY_LAYOUT, data)
 
-    left = top = Inches(1.2)
-    width = height = Inches(5)
-    text_box = slide.shapes.add_textbox(left, top, width, height)
+    text_box = slide.shapes.add_textbox(Inches(1.28), Inches(1.18), Inches(5.81), Inches(0.4))
     text_box.text_frame.text = pandas.Series(data)[CONTENT_KEY]
 
     presentation.save(FILE_NAME)
@@ -138,7 +146,8 @@ def generate_picture_slide_report(data):
 def generate_plot_slide_report(data):
     presentation, slide = create_presentation(TITLE_ONLY_LAYOUT, data)
 
-    values = numpy.loadtxt(pandas.Series(data)[CONTENT_KEY], delimiter=';')
+    plot_data_path = get_file_path(pandas.Series(data)[CONTENT_KEY])
+    values = numpy.loadtxt(plot_data_path, delimiter=';')
     x = [row[0] for row in values]
     y = [row[1] for row in values]
     configuration = pandas.Series(data)['configuration']
@@ -156,4 +165,5 @@ def generate_plot_slide_report(data):
     presentation.save(FILE_NAME)
 
 
-read_config()
+if __name__ == "__main__":
+    generate_report()
